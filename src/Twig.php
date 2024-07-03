@@ -15,7 +15,7 @@ class Twig implements ViewInterface
     private LoaderInterface $loader;
     private array $options = [
         'cache_path' => '/storage/views',
-        'file_paths' => [],
+        'view_paths' => [],
         'namespaces' => [],
         'extensions' => [],
         'filters' => [],
@@ -31,16 +31,15 @@ class Twig implements ViewInterface
             $this->options[$k] = (isset($overrides[$k])) ? $overrides[$k] : $v;
         }
 
-        $this->loader = new FilesystemLoader();
-        foreach ($this->options['file_paths'] as $path) {
-            $this->loader->addPath($path);
-        }
+        $this->loader = new FilesystemLoader(array_map(function ($path) {
+            return path($path);
+        }, (array) $this->options['view_paths']));
         foreach ($this->options['namespaces'] as $name => $path) {
-            $this->loader->addPath($path, ltrim($name, '@'));
+            $this->loader->addPath(path($path), ltrim($name, '@'));
         }
 
         $this->twig = new Environment($this->loader, [
-            'cache' => path($this->options['cache_path'])
+            'cache' => (false === $this->options['use_cache']) ? false : path($this->options['cache_path'])
         ]);
         foreach ($this->options['extensions'] as $extension) {
             $this->twig->addExtension($extension);
